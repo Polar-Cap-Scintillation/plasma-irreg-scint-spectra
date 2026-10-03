@@ -6,9 +6,11 @@ import datetime as dt
 import pymap3d as pm
 import csv
 import argparse
-import sys
-sys.path.append('/Users/e30737/Desktop/Research/PolarCapScintillation/conjunctions')
-from satellite_conjunction import SatConj
+#import sys
+#sys.path.append('/Users/e30737/Desktop/Research/PolarCapScintillation/conjunctions')
+#from satellite_conjunction import SatConj
+from satgroundconj.conjunction import SatConj
+from gnssutils.map_prn import prn2norad
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 
@@ -28,8 +30,8 @@ with open('CHAINsites.txt', 'r') as cf:
 
 output_file = f'insitu_gnss_conj_{receiver_name}.txt'
 
-starttime = dt.datetime(2024,1,1, tzinfo=dt.timezone.utc)
-endtime = dt.datetime(2024,1,2, tzinfo=dt.timezone.utc)
+starttime = dt.datetime(2016,1,1, tzinfo=dt.timezone.utc)
+endtime = dt.datetime(2016,1,2, tzinfo=dt.timezone.utc)
 
 elev_cutoff = 30.
 tstep = 60.
@@ -37,56 +39,56 @@ tstep = 60.
 # Swarm A, B, C; LLITED A, B
 insitu_sats = [{'name': 'Swarm A', 'NORAD': 39452, 'start': dt.datetime(2013,12,2, tzinfo=dt.timezone.utc), 'end': dt.datetime.now(tz=dt.timezone.utc)},
                {'name': 'Swarm B', 'NORAD': 39451, 'start': dt.datetime(2013,12,2, tzinfo=dt.timezone.utc), 'end': dt.datetime.now(tz=dt.timezone.utc)},
-               {'name': 'Swarm C', 'NORAD': 39453, 'start': dt.datetime(2013,12,2, tzinfo=dt.timezone.utc), 'end': dt.datetime.now(tz=dt.timezone.utc)},
-               {'name': 'LLITED A', 'NORAD': 56219, 'start': dt.datetime(2023,4,15, tzinfo=dt.timezone.utc), 'end': dt.datetime(2024,8,28, tzinfo=dt.timezone.utc)},
-               {'name': 'LLITED B', 'NORAD': 56220, 'start': dt.datetime(2023,4,15, tzinfo=dt.timezone.utc), 'end': dt.datetime(2024,8,28, tzinfo=dt.timezone.utc)}]
+               {'name': 'Swarm C', 'NORAD': 39453, 'start': dt.datetime(2013,12,2, tzinfo=dt.timezone.utc), 'end': dt.datetime.now(tz=dt.timezone.utc)}]
+#               {'name': 'LLITED A', 'NORAD': 56219, 'start': dt.datetime(2023,4,15, tzinfo=dt.timezone.utc), 'end': dt.datetime(2024,8,28, tzinfo=dt.timezone.utc)},
+#               {'name': 'LLITED B', 'NORAD': 56220, 'start': dt.datetime(2023,4,15, tzinfo=dt.timezone.utc), 'end': dt.datetime(2024,8,28, tzinfo=dt.timezone.utc)}]
 
-# Generate list of all GPS satellites and their vaild time ranges from IGS file
-with open('igs_satellite_metadata.snx', 'r', encoding='iso-8859-1') as f:
-    # Skip to SATELLITE/IDENTIFIER block
-    for line in f:
-        try:
-            if line.split()[0] == '+SATELLITE/IDENTIFIER':
-                break
-        except IndexError:
-            pass
-    # Skip heading
-    for _ in range(3):
-        f.readline()
-    # Read block into dictionary
-    svn_norad = dict()
-    for line in f:
-        try:
-            svn_norad[line.split()[0]] = line.split()[2]
-        except IndexError:
-            break
-    # Skip to SATELLITE/PRN block
-    for line in f:
-        try:
-            if line.split()[0] == '+SATELLITE/PRN':
-                break
-        except IndexError:
-            pass
-    # Skip heading
-    for _ in range(3):
-        f.readline()
-    # Read block into dictionary
-    gnss_catalog = list()
-    for line in f:
-        try:
-            fields = line.split()
-            sd = dt.datetime.strptime(fields[1][:8],'%Y:%j').replace(tzinfo=dt.timezone.utc)
-            try:
-                ed = dt.datetime.strptime(fields[2][:8],'%Y:%j').replace(tzinfo=dt.timezone.utc)
-            except ValueError:
-                ed = dt.datetime.now(tz=dt.timezone.utc)
-            gnss_catalog.append({'SVN':fields[0], 'NORAD':svn_norad[fields[0]], 'start':sd, 'end':ed, 'PRN':fields[3]})
-        except IndexError:
-            break
-
-# Restrict to ONLY GPS satellites within time frame of interest
-gnss_catalog = [entry for entry in gnss_catalog if entry['SVN'].startswith('G')]
-gnss_sats = [entry for entry in gnss_catalog if (entry['start']<endtime and entry['end']>starttime)]
+## Generate list of all GPS satellites and their vaild time ranges from IGS file
+#with open('igs_satellite_metadata.snx', 'r', encoding='iso-8859-1') as f:
+#    # Skip to SATELLITE/IDENTIFIER block
+#    for line in f:
+#        try:
+#            if line.split()[0] == '+SATELLITE/IDENTIFIER':
+#                break
+#        except IndexError:
+#            pass
+#    # Skip heading
+#    for _ in range(3):
+#        f.readline()
+#    # Read block into dictionary
+#    svn_norad = dict()
+#    for line in f:
+#        try:
+#            svn_norad[line.split()[0]] = line.split()[2]
+#        except IndexError:
+#            break
+#    # Skip to SATELLITE/PRN block
+#    for line in f:
+#        try:
+#            if line.split()[0] == '+SATELLITE/PRN':
+#                break
+#        except IndexError:
+#            pass
+#    # Skip heading
+#    for _ in range(3):
+#        f.readline()
+#    # Read block into dictionary
+#    gnss_catalog = list()
+#    for line in f:
+#        try:
+#            fields = line.split()
+#            sd = dt.datetime.strptime(fields[1][:8],'%Y:%j').replace(tzinfo=dt.timezone.utc)
+#            try:
+#                ed = dt.datetime.strptime(fields[2][:8],'%Y:%j').replace(tzinfo=dt.timezone.utc)
+#            except ValueError:
+#                ed = dt.datetime.now(tz=dt.timezone.utc)
+#            gnss_catalog.append({'SVN':fields[0], 'NORAD':svn_norad[fields[0]], 'start':sd, 'end':ed, 'PRN':fields[3]})
+#        except IndexError:
+#            break
+#
+## Restrict to ONLY GPS satellites within time frame of interest
+#gnss_catalog = [entry for entry in gnss_catalog if entry['SVN'].startswith('G')]
+#gnss_sats = [entry for entry in gnss_catalog if (entry['start']<endtime and entry['end']>starttime)]
 
 
 # Generate lists of all passes for in situ satellites
@@ -95,7 +97,9 @@ passes_insitu = list()
 for sat in insitu_sats:
     print(sat['name'], 'NORAD ID:', sat['NORAD'])
     # Initialize conjunction object
-    insitu = SatConj(*receiver_site, sat['NORAD'], tolerance=90.-elev_cutoff, deltime=tstep)
+    print(tstep)
+    print(receiver_site)
+    insitu = SatConj(receiver_site, sat['NORAD'], tolerance=90.-elev_cutoff, deltime=tstep, tledb='/Users/e30737/Desktop/Data/TLE/test8.db')
     # Find correct time bounds
     if starttime > sat['start']:
         st = starttime.replace(tzinfo=None)
@@ -111,10 +115,17 @@ for sat in insitu_sats:
 # Generate lists of all passes for GNSS satellites
 print('Finding passes for GNSS...')
 passes_gnss = list()
-for sat in gnss_sats:
-    print('PRN', sat['PRN'], 'NORAD ID:', sat['NORAD'])
+#for sat in gnss_sats:
+#    print('PRN', sat['PRN'], 'NORAD ID:', sat['NORAD'])
+
+for gnum in range(1,32):
+    prn = f'G{gnum:02d}'
+    sat_id = prn2norad(prn, starttime)
+    if not sat_id:
+        continue
+
     # Initalize conjunction object
-    gnss = SatConj(*receiver_site, sat['NORAD'], tolerance=90.-elev_cutoff, deltime=tstep)
+    gnss = SatConj(receiver_site, sat['NORAD'], tolerance=90.-elev_cutoff, deltime=tstep, tledb='/Users/e30737/Desktop/Data/TLE/test8.db')
     # Find the correct time bounds
     if starttime > sat['start']:
         st = starttime.replace(tzinfo=None)
