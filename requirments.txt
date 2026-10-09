@@ -1,0 +1,8 @@
+numpy
+pymap3d
+pandas
+matplotlib
+cartopy
+cdflib
+scipy
+jupyterlab
